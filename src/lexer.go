@@ -35,6 +35,23 @@ const (
 	TOKEN_IGNORED            // white space or line terminator
 )
 
+var tokenNameMap = map[int]string{
+	TOKEN_EOF:         "EOF",
+	TOKEN_VAR_PREFIX:  "$",
+	TOKEN_LEFT_PAREN:  "(",
+	TOKEN_RIGHT_PAREN: ")",
+	TOKEN_EQUAL:       "=",
+	TOKEN_QUOTE:       "\"",
+	TOKEN_DOUQUOTE:    "\"\"",
+	TOKEN_NAME:        "Name",
+	TOKEN_PRINT:       "print",
+	TOKEN_IGNORED:     "Ignored",
+}
+
+var keywords = map[string]int{
+	"print": TOKEN_PRINT,
+}
+
 func NewLexer(sourceCode string) *Lexer {
 	return &Lexer{sourceCode, 1, "", 0, 0} // start at line 1
 }
@@ -82,6 +99,19 @@ func (lexer *Lexer) MatchToken() (lineNum int, tokenType int, token string) {
 	err := fmt.Sprintf("MatchToken(): unexpected symbol near '%q'.", lexer.sourceCode[0])
 	panic(err)
 	return
+}
+
+// a pack for MatchToken function
+func (lexer *Lexer) GetNextToken() (lineNum int, tokenType int, token string) {
+	if lexer.nextTokenLineNum > 0 {
+		lineNum = lexer.nextTokenLineNum
+		tokenType = lexer.nextTokenType
+		token = lexer.nextToken
+		lexer.lineNum = lexer.nextTokenLineNum
+		lexer.nextTokenLineNum = 0
+		return
+	}
+	return lexer.MatchToken()
 }
 
 // Ignored        ::= WhiteSpace | LineTerminator
@@ -160,10 +190,46 @@ func (lexer *Lexer) skipSourceCode(n int) {
 	lexer.sourceCode = lexer.sourceCode[n:]
 }
 
-func NextTokenIs(token int) (tokenName string) {
+// handlers
 
+// assert the next token & move forward to "eat" more tokens
+func (lexer *Lexer) NextTokenIs(tokenType int) (lineNum int, token string) {
+	nowLineNum, nowTokenType, nowToken := lexer.GetNextToken()
+	// syntax error
+	if tokenType != nowTokenType {
+		err := fmt.Sprintf("NextTokenIs(): syntax error near '%s', expected token {%s} but got {%s}.", tokenNameMap[nowTokenType], tokenNameMap[tokenType], tokenNameMap[nowTokenType])
+		panic(err)
+	}
+	return nowLineNum, nowToken
 }
 
-func LookAhead() (token int) {
+// return the next token type, but no moving the cursor
+func (lexer *Lexer) LookAhead() int {
+	// lexer.nextToken* is already set
+	if lexer.nextTokenLineNum > 0 {
+		return lexer.nextTokenType
+	}
+	// set it
+	nowLineNum := lexer.lineNum
+	lineNum, tokenType, token := lexer.GetNextToken()
+	// cursor moving backwards
+	lexer.lineNum = nowLineNum
+	lexer.nextTokenLineNum = lineNum
+	lexer.nextTokenType = tokenType
+	lexer.nextToken = token
+	return tokenType
+}
 
+// only for `Ignored`, just like lexer.LookAhead()
+func (lexer *Lexer) LookAheadAndSkip(expectedType int) {
+	// get next token
+	nowLineNum := lexer.lineNum
+	lineNum, tokenType, token := lexer.GetNextToken()
+	// not expected type, reverse cursor
+	if tokenType != expectedType {
+		lexer.lineNum = nowLineNum
+		lexer.nextTokenLineNum = lineNum
+		lexer.nextTokenType = tokenType
+		lexer.nextToken = token
+	}
 }

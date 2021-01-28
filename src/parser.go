@@ -3,15 +3,25 @@ package pineapple
 import "errors"
 
 // Print ::= "print" "(" Ignored Variable Ignored ")" Ignored
-func parsePrint() {
+func parsePrint(lexer *Lexer) (*Print, error) {
+	var print Print
+	var err error
+
+	print.lineNum = lexer.GetLineNum()
 	// "print"
-	NextTokenIs(TOKEN_PRINT)
+	lexer.NextTokenIs(TOKEN_PRINT)
 	// "("
-	NextTokenIs(TOKEN_LEFT_PAREN)
+	lexer.NextTokenIs(TOKEN_LEFT_PAREN)
+	lexer.LookAheadAndSkip(TOKEN_IGNORED)
 	// Variable
-	parseVariable()
+	if print.Variable, err = parseVariable(lexer); err != nil {
+		return nil, err
+	}
+	lexer.LookAheadAndSkip(TOKEN_IGNORED)
 	// ")"
-	NextTokenIs(TOKEN_RIGHT_PAREN)
+	lexer.NextTokenIs(TOKEN_RIGHT_PAREN)
+	lexer.LookAheadAndSkip(TOKEN_IGNORED)
+	return &print, nil
 }
 
 // Statement ::= Print | Assignment
