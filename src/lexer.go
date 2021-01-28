@@ -52,8 +52,21 @@ var keywords = map[string]int{
 	"print": TOKEN_PRINT,
 }
 
+// lexer struct
+type Lexer struct {
+	sourceCode       string
+	lineNum          int
+	nextToken        string
+	nextTokenType    int
+	nextTokenLineNum int
+}
+
 func NewLexer(sourceCode string) *Lexer {
 	return &Lexer{sourceCode, 1, "", 0, 0} // start at line 1
+}
+
+func (lexer *Lexer) GetLineNum() int {
+	return lexer.lineNum
 }
 
 func (lexer *Lexer) MatchToken() (lineNum int, tokenType int, token string) {

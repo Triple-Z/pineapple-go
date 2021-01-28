@@ -2,12 +2,53 @@ package pineapple
 
 import "errors"
 
+// Name ::= [_A-Za-z][_0-9A-Za-z]*
+func parseName(lexer *Lexer) (string, error) {
+	_, name := lexer.NextTokenIs(TOKEN_NAME)
+	return name, nil
+}
+
+// String          ::= '"' '"' Ignored | '"' StringCharacter '"' Ignored
+// StringCharacter ::= SourceCharacter - '"'
+func parseString(lexer *Lexer) (string, error) {
+	str := ""
+	switch lexer.LookAhead() {
+	case TOKEN_DOUQUOTE:
+		// empty string: `""`
+		lexer.NextTokenIs(TOKEN_DOUQUOTE)
+		lexer.LookAheadAndSkip(TOKEN_IGNORED)
+		return str, nil
+	case TOKEN_QUOTE:
+		lexer.NextTokenIs(TOKEN_QUOTE)
+		str = lexer.scanBeforeToken(tokenNameMap[TOKEN_QUOTE])
+		lexer.NextTokenIs(TOKEN_QUOTE)
+		lexer.LookAheadAndSkip(TOKEN_IGNORED)
+		return str, nil
+	default:
+		return "", errors.New("parseString(): not a string.")
+	}
+}
+
+// Variable        ::= "$" Name Ignored
+func parseVariable(lexer *Lexer) (*Variable, error) {
+	var variable Variable
+	var err error
+
+	variable.LineNum = lexer.GetLineNum()
+	lexer.NextTokenIs(TOKEN_VAR_PREFIX)
+	if variable.Name, err = parseName(lexer); err != nil {
+		return nil, err
+	}
+	lexer.LookAheadAndSkip(TOKEN_IGNORED)
+	return &variable, nil
+}
+
 // Print ::= "print" "(" Ignored Variable Ignored ")" Ignored
 func parsePrint(lexer *Lexer) (*Print, error) {
 	var print Print
 	var err error
 
-	print.lineNum = lexer.GetLineNum()
+	print.LineNum = lexer.GetLineNum()
 	// "print"
 	lexer.NextTokenIs(TOKEN_PRINT)
 	// "("
@@ -24,16 +65,87 @@ func parsePrint(lexer *Lexer) (*Print, error) {
 	return &print, nil
 }
 
+// Assignment ::= Variable Ignored "=" Ignored String Ignored
+func parseAssignment(lexer *Lexer) (*Assignment, error) {
+	var assignment Assignment
+	var err error
+
+	assignment.LineNum = lexer.GetLineNum()
+	// Variable
+	if assignment.Variable, err = parseVariable(lexer); err != nil {
+		return nil, err
+	}
+	lexer.LookAheadAndSkip(TOKEN_IGNORED)
+	// "="
+	lexer.NextTokenIs(TOKEN_EQUAL)
+	lexer.LookAheadAndSkip(TOKEN_IGNORED)
+	// String
+	if assignment.String, err = parseString(lexer); err != nil {
+		return nil, err
+	}
+	lexer.LookAheadAndSkip(TOKEN_IGNORED)
+	return &assignment, nil
+}
+
 // Statement ::= Print | Assignment
-func parseStatement() {
-	switch LookAhead() {
+func parseStatement(lexer *Lexer) (Statement, error) {
+	switch lexer.LookAhead() {
 	// "print"
 	case TOKEN_PRINT:
-		return parsePrint()
+		return parsePrint(lexer)
 	// "$"
 	case TOKEN_VAR_PREFIX:
-		return parseAssignment()
+		return parseAssignment(lexer)
 	default:
 		return nil, errors.New("parseStatement(): unknown Statement")
 	}
+}
+
+func parseStatements(lexer *Lexer) ([]Statement, error) {
+	var statements []Statement
+
+	for !isSourceCodeEnd(lexer.LookAhead()) {
+		var statement Statement
+		var err error
+
+		if statement, err = parseStatement(lexer); err != nil {
+			return nil, err
+		}
+		statements = append(statements, statement)
+	}
+
+	return statements, nil
+}
+
+func isSourceCodeEnd(tokenType int) bool {
+	if tokenType == TOKEN_EOF {
+		return true
+	}
+	return false
+}
+
+// SourceCode ::= Statement+
+func parseSourceCode(lexer *Lexer) (*SourceCode, error) {
+	var sourceCode SourceCode
+	var err error
+
+	sourceCode.LineNum = lexer.GetLineNum()
+	if sourceCode.Statements, err = parseStatements(lexer); err != nil {
+		return nil, err
+	}
+
+	return &sourceCode, nil
+}
+
+// the last capsuling
+func parse(code string) (*SourceCode, error) {
+	var sourceCode *SourceCode
+	var err error
+
+	lexer := NewLexer(code)
+	if sourceCode, err = parseSourceCode(lexer); err != nil {
+		return nil, err
+	}
+	lexer.NextTokenIs(TOKEN_EOF)
+	return sourceCode, nil
 }
