@@ -18,7 +18,6 @@ import (
 // SourceCode      ::= Statement+
 // Ignored        ::= WhiteSpace | LineTerminator
 // WhiteSpace     ::= '\t' | ' ' /* ASCII: \t | Space, Horizontal Tab (U+0009), Space (U+0020) */
-/* ASCII: \n | \r\n | \r, New Line (U+000A) | Carriage Return (U+000D) [Lookahead != New Line (U+000A)] | Carriage Return (U+000D)New Line (U+000A) */
 // LineTerminator ::= '\n' | '\r' | '\r\n'   /* ASCII: \n | \r\n | \r, New Line (U+000A) | Carriage Return (U+000D) [Lookahead != New Line (U+000A)] | Carriage Return (U+000D)New Line (U+000A) */
 
 // tokens
@@ -73,6 +72,11 @@ func (lexer *Lexer) MatchToken() (lineNum int, tokenType int, token string) {
 	// check ignored
 	if lexer.isIgnored() {
 		return lexer.lineNum, TOKEN_IGNORED, "Ignored"
+	}
+
+	// finish
+	if len(lexer.sourceCode) == 0 {
+		return lexer.lineNum, TOKEN_EOF, tokenNameMap[TOKEN_EOF]
 	}
 
 	// check token

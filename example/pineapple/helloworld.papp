@@ -1,0 +1,2 @@
+$hello_world = "Hello, world! This is pineapple programming language!"
+print( $hello_world )

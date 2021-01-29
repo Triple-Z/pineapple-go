@@ -1,3 +1,3 @@
-module pineapple/triplez
+module pineapple-go
 
 go 1.15
