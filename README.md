@@ -18,7 +18,11 @@ Hello, world! This is pineapple programming language!
 
 :tada: You will see the results at your console!
 
-## Pineapple EBNF
+## Function calls
+
+![parser function calls](blob/parser.png)
+
+## Pineapple BNF
 
 ```
 SourceCharacter ::=  #x0009 | #x000A | #x000D | [#x0020-#xFFFF]
@@ -37,4 +41,4 @@ LineTerminator ::= '\n' | '\r' | '\r\n'   /* ASCII: \n | \r\n | \r, New Line (U+
 
 ## License
 
-MIT, follow the origin repository.
+MIT, follows the [original repository](https://github.com/karminski/pineapple).

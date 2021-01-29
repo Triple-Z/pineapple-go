@@ -34,6 +34,7 @@ const (
 	TOKEN_IGNORED            // white space or line terminator
 )
 
+// map for better print
 var tokenNameMap = map[int]string{
 	TOKEN_EOF:         "EOF",
 	TOKEN_VAR_PREFIX:  "$",
