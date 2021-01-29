@@ -5,9 +5,15 @@ Try to write a (toy) lexer&parser&backend by following the [tutorial](https://gi
 ## Quick rundown
 
 ```bash
-git clone https://github.com/Triple-Z/pineapple-go.git
-cd pineapple-go
-make example
+$ git clone https://github.com/Triple-Z/pineapple-go.git
+$ cd pineapple-go
+$ make example
+This is the original code:
+$hello_world = "Hello, world! This is pineapple programming language!"
+print( $hello_world )
+
+Run this program, and the following are results!
+Hello, world! This is pineapple programming language!
 ```
 
 :tada: You will see the results at your console!
